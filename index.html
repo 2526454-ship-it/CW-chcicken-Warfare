@@ -1,187 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shadow Monarch: Final System</title>
+    <title>MONARCH v51: PIXEL VANGUARD</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@1,900&display=swap');
-      body { margin: 0; overflow: hidden; background: #000; font-family: 'Kanit', sans-serif; }
-      
-      #hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; padding: 30px; }
-      
-      /* SYSTEM HEALTH BAR */
-      .status-wrap { width: 400px; transform: skew(-15deg); }
-      .bar-label { color: #0f0; font-size: 0.8rem; letter-spacing: 3px; margin-bottom: 4px; text-shadow: 0 0 5px #0f0; }
-      .hp-bg { width: 100%; height: 18px; background: rgba(0, 40, 0, 0.6); border: 2px solid #0f0; position: relative; overflow: hidden; }
-      #hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #0f0, #004400); transition: 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
-      #hp-ghost { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; transition: 0.2s; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap');
+        :root { --blue: #00e5ff; --red: #ff2d55; --void: #ff00ff; --cyan: #00ffaa; --bg: #00ccff; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Rajdhani', sans-serif; color: #fff; }
+        
+        #boot-layer { position: absolute; inset: 0; background: linear-gradient(135deg, #00ccff 0%, #ff00ff 100%); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .boot-modal { border: 4px solid #fff; padding: 50px; text-align: center; background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); box-shadow: 0 0 50px rgba(255, 255, 255, 0.5); }
+        .launch-btn { background: #fff; border: none; color: #000; padding: 15px 80px; font-family: 'Orbitron'; cursor: pointer; letter-spacing: 5px; font-weight: 900; font-size: 1.2rem; transition: 0.3s; }
+        .launch-btn:hover { background: var(--cyan); transform: scale(1.05); box-shadow: 0 0 30px var(--cyan); }
 
-      #menu { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: #0f0; }
-      button { padding: 15px 60px; font-size: 1.8rem; background: #0f0; border: none; cursor: pointer; transform: skew(-10deg); color: #000; font-family: 'Kanit'; }
-      
-      #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #0f0; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px #0f0; }
+        #hud { position: absolute; inset: 0; pointer-events: none; z-index: 100; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; opacity: 0; transition: 0.5s; }
+        .stat-panel { background: rgba(255,255,255,0.2); border: 2px solid #fff; padding: 10px; backdrop-filter: blur(5px); min-width: 140px; box-shadow: 4px 4px 0px #000; }
+        #wave-num { font-family: 'Orbitron'; font-size: 3.5rem; color: #fff; -webkit-text-stroke: 2px #000; margin: 0; text-align: center; }
+        
+        #gear-shelf { display: flex; justify-content: center; gap: 15px; align-items: flex-end; }
+        .gear-slot { width: 80px; height: 80px; border: 3px solid #fff; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; position: relative; box-shadow: 5px 5px 0px #000; }
+        .gear-slot.active { background: var(--cyan); transform: translateY(-10px); }
+        .gear-slot.ready { border-color: var(--void); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        #reticle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; border: 3px solid #fff; }
+        #damage-flash { position: absolute; inset: 0; background: rgba(255,0,0,0.4); opacity: 0; pointer-events: none; transition: 0.1s; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  </head>
-  <body>
-    <div id="crosshair"></div>
-    <div id="hud">
-      <div class="status-wrap">
-        <div class="bar-label">PLAYER: SUNG JIN-WOO</div>
-        <div class="hp-bg">
-            <div id="hp-ghost"></div>
-            <div id="hp-bar"></div>
+</head>
+<body>
+
+    <div id="boot-layer">
+        <div class="boot-modal">
+            <h1 style="font-family:'Orbitron'; font-size:3rem; margin:0;">PIXEL_ARENA</h1>
+            <p style="color:#fff; letter-spacing:3px; margin-bottom:20px;">RETRO WORLD // V51.0</p>
+            <button class="launch-btn" id="start-btn">START GAME</button>
         </div>
-      </div>
     </div>
 
-    <div id="menu">
-      <h1 style="font-size: 4rem; letter-spacing: -2px;">SYSTEM INITIALIZED</h1>
-      <button id="start-btn">ARISE</button>
+    <div id="damage-flash"></div>
+
+    <div id="hud">
+        <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%);">
+            <h1 id="wave-num">WAVE 1</h1>
+            <div id="mob-stats" style="text-align:center; font-weight:bold; text-shadow: 2px 2px #000;">ENEMIES: 0</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+            <div class="stat-panel">
+                <div style="font-size: 0.8rem; font-weight:900;">HEALTH</div>
+                <div style="font-family:'Orbitron'; font-size: 2rem;" id="hp-display">100</div>
+                <div style="width:100%; height:8px; background:#000;"><div id="hp-bar-ui" style="width:100%; height:100%; background:#ff2d55;"></div></div>
+            </div>
+            <div class="stat-panel" style="text-align: right;">
+                <div style="font-size: 0.8rem; font-weight:900;">VOID SCORE</div>
+                <div style="font-family:'Orbitron'; font-size: 2rem; color: #ff00ff;" id="void-display">0 / 15</div>
+            </div>
+        </div>
+
+        <div id="reticle"></div>
+
+        <div id="gear-shelf">
+            <div class="gear-slot active" id="s1">
+                <span id="ammo-count" style="font-size:1.5rem; font-weight: 900;">15</span>
+                <span style="font-size: 0.6rem;">BOLTS</span>
+            </div>
+            <div class="gear-slot" id="s2">
+                <span style="font-size: 1rem; font-weight: 900;">PUNCH</span>
+            </div>
+            <div class="gear-slot" id="sQ">
+                <span style="font-weight:900;">VOID</span>
+                <span style="font-size: 0.5rem;">[Q]</span>
+            </div>
+        </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-      let scene, camera, renderer, yaw, pitch, viewmodel;
-      let moveState = { w:0, a:0, s:0, d:0, shift:0, space:0, ctrl:0 };
-      let velocity = new THREE.Vector3(), canJump = true, health = 100;
-      let isLocked = false, enemies = [];
-      const clock = new THREE.Clock();
+        class MonarchPixel {
+            constructor() {
+                this.ready = false; this.mobs = []; this.beams = []; this.clock = new THREE.Clock();
+                this.wave = 1; this.queue = 0; this.activeWave = false;
+                this.state = { hp: 100, targetHp: 100, displayHp: 100, void: 0, ammo: 15, maxAmmo: 15, mode: 1 };
+                this.input = { w:0, a:0, s:0, d:0, c:0 };
+                this.phys = { v: new THREE.Vector3(), spd: 160, h: 22, cH: 12 };
+                this.handTarget = new THREE.Vector3(2.5, -2.5, -4);
 
-      init();
-      animate();
+                this.initRender();
+                this.initMap();
+                this.initPrismArm();
+                this.initEvents();
+                this.animate();
+            }
 
-      function init() {
-        scene = new THREE.Scene();
-        scene.fog = new THREE.Fog(0x000500, 10, 450);
+            initRender() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x00ccff); // Bright Retro Sky
+                this.cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 50000);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(this.renderer.domElement);
+                this.yaw = new THREE.Object3D(); this.pitch = new THREE.Object3D();
+                this.yaw.position.y = this.phys.h; this.yaw.add(this.pitch); this.pitch.add(this.cam);
+                this.scene.add(this.yaw);
+                this.scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+                const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(50, 100, 50); this.scene.add(sun);
+            }
 
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        pitch = new THREE.Object3D(); pitch.add(camera);
-        yaw = new THREE.Object3D(); yaw.position.set(0, 5, 0); yaw.add(pitch);
-        scene.add(yaw);
+            initMap() {
+                // Bright Grid Floor
+                const grid = new THREE.GridHelper(10000, 100, 0xffffff, 0x00aaff);
+                this.scene.add(grid);
+                const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshStandardMaterial({color: 0x00ff88}));
+                ground.rotation.x = -Math.PI/2; ground.position.y = -0.1; this.scene.add(ground);
 
-        // Viewmodel
-        viewmodel = new THREE.Group();
-        camera.add(viewmodel);
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 1.2), new THREE.MeshBasicMaterial({ color: 0x00ff44 }));
-        blade.position.set(0.6, -0.4, -1.2);
-        viewmodel.add(blade);
+                // Pixel Trees
+                for(let i=0; i<60; i++) {
+                    const tree = new THREE.Group();
+                    const log = new THREE.Mesh(new THREE.BoxGeometry(10, 30, 10), new THREE.MeshStandardMaterial({color: 0x8b4513}));
+                    log.position.y = 15; tree.add(log);
+                    const leaves = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 30), new THREE.MeshStandardMaterial({color: 0x228b22}));
+                    leaves.position.y = 45; tree.add(leaves);
+                    tree.position.set((Math.random()-0.5)*4000, 0, (Math.random()-0.5)*4000);
+                    this.scene.add(tree);
+                }
+            }
 
-        // Ground
-        scene.add(new THREE.GridHelper(2000, 100, 0x003300, 0x001100));
-        scene.add(new THREE.AmbientLight(0x00ff00, 0.1));
+            initPrismArm() {
+                this.handGrp = new THREE.Group();
+                const cyanMat = new THREE.MeshStandardMaterial({color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5});
+                const pinkMat = new THREE.MeshStandardMaterial({color: 0xff00ff});
+                
+                const forearm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 4), cyanMat);
+                forearm.position.z = 1.5; this.handGrp.add(forearm);
+                
+                const fist = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.5, 1.8), pinkMat);
+                this.handGrp.add(fist);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+                for(let i=0; i<4; i++) {
+                    const finger = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 1), new THREE.MeshStandardMaterial({color: 0xffffff}));
+                    finger.position.set(-0.6 + (i*0.4), 0.2, -1.2);
+                    this.handGrp.add(finger);
+                }
 
-        document.getElementById('start-btn').onclick = () => document.body.requestPointerLock();
-        document.addEventListener('pointerlockchange', () => {
-          isLocked = document.pointerLockElement === document.body;
-          document.getElementById('menu').style.display = isLocked ? 'none' : 'flex';
-        });
+                this.handGrp.position.copy(this.handTarget);
+                this.pitch.add(this.handGrp);
+            }
 
-        // INPUT LISTENERS
-        const handleKeys = (e, val) => {
-          const key = e.key.toLowerCase();
-          if (key === 'shift') moveState.shift = val;
-          if (key === ' ') moveState.space = val;
-          if (e.code === 'ControlLeft') moveState.ctrl = val;
-          if (moveState.hasOwnProperty(key)) moveState[key] = val;
-        };
-        window.addEventListener('keydown', (e) => handleKeys(e, 1));
-        window.addEventListener('keyup', (e) => handleKeys(e, 0));
-        window.addEventListener('mousedown', () => { if(isLocked) attack(); });
-        
-        document.addEventListener('mousemove', (e) => {
-          if(!isLocked) return;
-          yaw.rotation.y -= e.movementX * 0.002;
-          pitch.rotation.x -= e.movementY * 0.002;
-          pitch.rotation.x = Math.max(-1.4, Math.min(1.4, pitch.rotation.x));
-        });
-      }
+            initEvents() {
+                document.getElementById('start-btn').onclick = () => {
+                    document.body.requestPointerLock();
+                    document.getElementById('boot-layer').style.display = 'none';
+                    document.getElementById('hud').style.opacity = '1';
+                    this.startWave();
+                };
+                document.addEventListener('pointerlockchange', () => { this.ready = !!document.pointerLockElement; });
+                window.addEventListener('mousemove', (e) => {
+                    if(!this.ready) return;
+                    this.yaw.rotation.y -= e.movementX * 0.002;
+                    this.pitch.rotation.x -= e.movementY * 0.002;
+                    this.pitch.rotation.x = Math.max(-1.5, Math.min(1.5, this.pitch.rotation.x));
+                });
+                window.addEventListener('keydown', (e) => {
+                    const k = e.key.toLowerCase(); if(k in this.input) this.input[k] = 1;
+                    if(k === '1') this.setMode(1); if(k === '2') this.setMode(2);
+                    if(k === 'q') this.voidBlast();
+                });
+                window.addEventListener('keyup', (e) => { if(e.key.toLowerCase() in this.input) this.input[e.key.toLowerCase()] = 0; });
+                window.addEventListener('mousedown', () => { if(this.ready) this.action(); });
+            }
 
-      function attack() {
-        viewmodel.position.z = -0.5;
-        setTimeout(() => viewmodel.position.z = 0, 100);
-        enemies.forEach((e, i) => {
-          if(yaw.position.distanceTo(e.position) < 22) {
-            scene.remove(e);
-            enemies.splice(i, 1);
-          }
-        });
-      }
+            setMode(m) {
+                this.state.mode = m;
+                document.getElementById('s1').classList.toggle('active', m === 1);
+                document.getElementById('s2').classList.toggle('active', m === 2);
+                this.handTarget.set(m===2 ? 0 : 2.5, m===2 ? -1.5 : -2.5, m===2 ? -5 : -4);
+            }
 
-      function takeDamage(amt) {
-        health -= amt;
-        const bar = document.getElementById('hp-bar');
-        const ghost = document.getElementById('hp-ghost');
-        bar.style.width = health + "%";
-        ghost.style.opacity = 1;
-        setTimeout(() => ghost.style.opacity = 0, 100);
-        if(health <= 0) location.reload();
-      }
+            startWave() {
+                this.activeWave = true; this.queue = 5 + (this.wave * 3);
+                document.getElementById('wave-num').innerText = `WAVE ${this.wave}`;
+                this.spawnHandler();
+            }
 
-      function spawnEnemy() {
-        if(enemies.length > 15) return;
-        const e = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 2), new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true }));
-        const angle = Math.random() * Math.PI * 2;
-        e.position.set(Math.cos(angle)*150 + yaw.position.x, 3, Math.sin(angle)*150 + yaw.position.z);
-        scene.add(e); enemies.push(e);
-      }
+            spawnHandler() {
+                if(this.queue > 0 && this.activeWave) {
+                    this.spawnEnemy(); this.queue--;
+                    setTimeout(() => this.spawnHandler(), 1500);
+                }
+            }
 
-      function animate() {
-        requestAnimationFrame(animate);
-        if(!isLocked) return;
+            spawnEnemy() {
+                const cols = [0xffffff, 0x4b0082, 0xff00ff, 0x00f2ff];
+                const type = Math.random();
+                const isTank = type > 0.85;
+                const isFlyer = !isTank && type > 0.65;
+                const scale = isTank ? 2.5 : (isFlyer ? 0.8 : 1.0);
 
-        const dt = clock.getDelta();
-        const t = clock.getElapsedTime();
+                const g = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(8, 9, 10), new THREE.MeshStandardMaterial({color: cols[Math.floor(Math.random()*4)]}));
+                g.add(body);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshStandardMaterial({color: 0xffffff}));
+                head.position.set(0, 6, -3); g.add(head);
+                
+                g.scale.set(scale, scale, scale);
+                const hpF = new THREE.Mesh(new THREE.PlaneGeometry(10, 1.5), new THREE.MeshBasicMaterial({color: 0x00ff00}));
+                hpF.position.y = 15; g.add(hpF);
+                
+                const dist = 700 + Math.random()*300;
+                const ang = Math.random()*Math.PI*2;
+                const alt = isFlyer ? 45 : 4.5 * scale;
+                g.position.set(Math.cos(ang)*dist + this.yaw.position.x, alt, Math.sin(ang)*dist + this.yaw.position.z);
+                
+                this.mobs.push({ 
+                    mesh: g, hp: (isTank ? 1200 : 450), max: (isTank ? 1200 : 450), 
+                    spd: isTank ? 70 : 120, bar: hpF, flyer: isFlyer, baseAlt: alt, 
+                    clk: Math.random()*10, v: new THREE.Vector3(), atkCD: 0 
+                });
+                this.scene.add(g);
+                this.updateCount();
+            }
 
-        // --- PHYSICS & MOVEMENT ---
-        let speed = moveState.shift ? 75 : 45;
-        if (moveState.ctrl) speed *= 0.5;
+            action() {
+                if(this.state.mode === 1) {
+                    if(this.state.ammo > 0) {
+                        this.state.ammo--; this.updateUI();
+                        this.handGrp.position.z += 1;
+                        const p = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial({color: 0xffff00}));
+                        const d = new THREE.Vector3(0,0,-1).applyQuaternion(this.cam.getWorldQuaternion(new THREE.Quaternion()));
+                        p.position.copy(this.yaw.position).add(d.clone().multiplyScalar(5));
+                        this.beams.push({ m: p, d: d, t: 2 }); this.scene.add(p);
+                    } else { this.state.ammo = 15; this.updateUI(); }
+                } else {
+                    this.handGrp.position.z -= 4;
+                    this.mobs.forEach(m => {
+                        if(m.mesh.position.distanceTo(this.yaw.position) < 100) {
+                            m.hp -= 260;
+                            m.v.add(m.mesh.position.clone().sub(this.yaw.position).normalize().multiplyScalar(350));
+                        }
+                    });
+                }
+            }
 
-        // XZ Movement
-        let input = new THREE.Vector3((moveState.d - moveState.a), 0, (moveState.s - moveState.w)).normalize();
-        let moveDir = input.applyQuaternion(yaw.quaternion);
-        velocity.x = THREE.MathUtils.lerp(velocity.x, moveDir.x * speed, 0.15);
-        velocity.z = THREE.MathUtils.lerp(velocity.z, moveDir.z * speed, 0.15);
-        
-        // Jump & Gravity
-        if (moveState.space && canJump) {
-            velocity.y = 35;
-            canJump = false;
+            takeHit() {
+                this.state.targetHp -= (5 + Math.random()*3);
+                document.getElementById('damage-flash').style.opacity = '1';
+                setTimeout(() => document.getElementById('damage-flash').style.opacity = '0', 100);
+            }
+
+            voidBlast() { if(this.state.void >= 15) { this.state.void = 0; this.mobs.forEach(m => m.hp = 0); this.updateUI(); } }
+
+            updateUI() {
+                document.getElementById('void-display').innerText = `${this.state.void} / 15`;
+                document.getElementById('ammo-count').innerText = this.state.ammo;
+                document.getElementById('sQ').classList.toggle('ready', this.state.void >= 15);
+            }
+
+            updateCount() { document.getElementById('mob-stats').innerText = `ENEMIES: ${this.mobs.length + this.queue}`; }
+
+            animate() {
+                requestAnimationFrame(() => this.animate()); if(!this.ready) return;
+                const dt = this.clock.getDelta();
+
+                if(this.state.displayHp > this.state.targetHp) {
+                    this.state.displayHp -= 20 * dt;
+                    document.getElementById('hp-display').innerText = Math.ceil(this.state.displayHp);
+                    document.getElementById('hp-bar-ui').style.width = this.state.displayHp + "%";
+                    if(this.state.displayHp <= 0) location.reload();
+                }
+
+                this.handGrp.position.lerp(this.handTarget, 0.15);
+                const move = new THREE.Vector3(this.input.d - this.input.a, 0, this.input.s - this.input.w).normalize().applyQuaternion(this.yaw.quaternion);
+                this.yaw.position.add(move.multiplyScalar(this.phys.spd * dt));
+
+                for(let i=this.beams.length-1; i>=0; i--) {
+                    const b = this.beams[i]; b.m.position.add(b.d.clone().multiplyScalar(2000*dt)); b.t -= dt;
+                    this.mobs.forEach(m => { if(b.m.position.distanceTo(m.mesh.position) < 40) { m.hp -= 150; b.t = 0; }});
+                    if(b.t <= 0) { this.scene.remove(b.m); this.beams.splice(i,1); }
+                }
+
+                for(let i=this.mobs.length-1; i>=0; i--) {
+                    const m = this.mobs[i]; m.clk += dt;
+                    const d = m.mesh.position.distanceTo(this.yaw.position);
+                    m.mesh.lookAt(this.yaw.position.x, m.mesh.position.y, this.yaw.position.z);
+
+                    if(d > 50) m.mesh.translateZ(m.spd * dt);
+                    else if(m.atkCD <= 0) { this.takeHit(); m.atkCD = 1.5; }
+                    if(m.atkCD > 0) m.atkCD -= dt;
+
+                    m.mesh.position.add(m.v.clone().multiplyScalar(dt)); m.v.multiplyScalar(0.9);
+                    const floor = m.flyer ? 40 : 4.5 * m.mesh.scale.x;
+                    if(m.mesh.position.y < floor) m.mesh.position.y = floor;
+
+                    m.bar.scale.x = Math.max(0.001, m.hp / m.max);
+                    if(m.hp <= 0) { this.state.void++; this.scene.remove(m.mesh); this.mobs.splice(i,1); this.updateUI(); this.updateCount(); }
+                }
+
+                if(this.mobs.length === 0 && this.queue === 0 && this.activeWave) {
+                    this.activeWave = false; this.wave++; setTimeout(() => this.startWave(), 3000);
+                }
+                this.renderer.render(this.scene, this.cam);
+            }
         }
-        velocity.y -= 90 * dt; // Gravity
-        
-        yaw.position.add(velocity.clone().multiplyScalar(dt));
-
-        // Floor Collision
-        if (yaw.position.y < 5) {
-            velocity.y = 0;
-            yaw.position.y = 5;
-            canJump = true;
-        }
-
-        // Crouch POV
-        const targetHeight = moveState.ctrl ? -1.5 : 0;
-        pitch.position.y = THREE.MathUtils.lerp(pitch.position.y, targetHeight, 0.2);
-
-        // Sprint FOV Effect
-        const targetFOV = moveState.shift ? 85 : 75;
-        camera.fov = THREE.MathUtils.lerp(camera.fov, targetFOV, 0.1);
-        camera.updateProjectionMatrix();
-
-        // Enemies
-        if(Math.random() > 0.98) spawnEnemy();
-        enemies.forEach(e => {
-          e.lookAt(yaw.position.x, 3, yaw.position.z);
-          e.translateZ(18 * dt);
-          if(e.position.distanceTo(yaw.position) < 7) takeDamage(0.3);
-        });
-
-        renderer.render(scene, camera);
-      }
+        window.onload = () => new MonarchPixel();
     </script>
-  </body>
+</body>
 </html>
